@@ -1,0 +1,57 @@
+config:
+  target: 'http://localhost:9999'
+  phases:
+    - duration: 50
+      arrivalRate: 1
+      rampTo: 110
+      name: "Ramp up créditos"
+    - duration: 50
+      arrivalRate: 500
+      name: "Sustain créditos"
+    - duration: 50
+      arrivalRate: 1
+      rampTo: 220
+      name: "Ramp up débitos"
+    - duration: 50
+      arrivalRate: 500
+      name: "Sustain débitos"
+    - duration: 50
+      arrivalRate: 1
+      rampTo: 10
+      name: "Ramp up extratos"
+    - duration: 50
+      arrivalRate: 500
+      name: "Sustain extratos"
+  variables:
+    contentType: "application/json"
+
+scenarios:
+  - name: "Créditos"
+    weight: 3
+    flow:
+      - post:
+          url: "/clientes/1/transacoes"
+          json:
+            valor: "10"
+            tipo: "c"
+            descricao: "Dale"
+          headers:
+            content-type: {{ contentType }}
+
+  - name: "Débitos"
+    weight: 2
+    flow:
+      - post:
+          url: "/clientes/1/transacoes"
+          json:
+            valor: "10"
+            tipo: "d"
+            descricao: "Dale"
+          headers:
+            content-type: {{ contentType }}
+
+  - name: "Extratos"
+    weight: 1
+    flow:
+      - get:
+          url: "/clientes/1/extrato"

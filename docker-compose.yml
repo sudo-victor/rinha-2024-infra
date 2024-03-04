@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  api01: &api
+    image: victorsouto/api-matadora-rinha-2024:latest
+    depends_on:
+      - redis
+    environment:
+      PORT: 3000
+      REDIS_URL: 'redis://:password@redis:6677'
+    ports:
+      - "3001:3000"
+    networks:
+      - rinha
+    mem_limit: 200M
+    cpus: 0.5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+
+  api02:
+    <<: *api
+    ports:
+      - "3002:3000"
+    networks:
+      - rinha
+    mem_limit: 200M
+    cpus: 0.5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 200M
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - ./init-redis.lua:/data/init-redis.lua
+    environment:
+      REDIS_PASSWORD: 'password'
+    ports:
+      - "6677:6379"
+    networks:
+      - rinha
+    entrypoint: ["sh", "-c"]
+    command: [
+      "redis-server --port 6677 --requirepass $$REDIS_PASSWORD --appendonly yes & sleep 10 && redis-cli -p 6677 -a $$REDIS_PASSWORD --eval /data/init-redis.lua ; redis-server --port 6379 --requirepass $$REDIS_PASSWORD --appendonly yes"
+    ]
+    mem_limit: 100M
+    cpus: 0.25
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 100M
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api01
+      - api02
+    ports:
+      - "9999:9999"
+    networks:
+      - rinha
+    mem_limit: 50M
+    cpus: 0.25
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 50M
+
+networks:
+  rinha:
+    driver: bridge
